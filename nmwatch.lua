@@ -1,11 +1,14 @@
--- NM/PH Watcher
--- Sockfoot/Bismarck
--- 8/15/2018
+_addon.version = '1.0'
+_addon.name = 'NMWatch'
+_addon.author = 'sockfoot/bismarck'
+_addon.commands = {'nmw', 'nmwatch'}
 
 texts = require('texts')
 require('strings')
+--config = require('config')
 
 refresh_time_in_seconds = 5
+color = 123
 
 ph = {
 	[1] = {
@@ -31,7 +34,76 @@ function file_unload(file) -- unset binds, etc
   coroutine.close(co)
 end
 
-windower.add_to_chat(0,'NMWatch Loaded!')
+windower.register_event('addon command', function(...)
+    command = arg
+
+    if command[1] == 'add' then
+		if command[2] == 'ph' then
+      		if command[3] and command[4] then
+      			add_ph(command[3],command[4])
+      		else
+      			report('Invalid syntax, use: //nmw add ph <match> <last two of hex ID>')
+      			report('e.g. for Bugbear Bondman: //nmw add ph Bondman 9a')
+      			report('<match> is case-sensitive and the <hex ID> needs to have lowercase letters if applicable')
+      		end
+
+  		elseif command[2] == 'nm' then
+  			if command[3] then
+  				add_nm(command[3])
+  			else		
+  				report('Invalid syntax, use: //nmw add nm <nm name>')
+  				report('Can be full name or a match, is case-sensitive')
+  				report('e.g. for Bugbear Strongman (use quotes on names with >1 word): //nmw add nm "Bugbear Strongman"')
+  			end
+      	end
+    elseif command[1] == 'reload' then
+      	windower.send_command('lua r nmwatch')
+  	elseif command[1] == 'clear' then
+  		ph = {}
+  		nm = {}
+	elseif command[1] == 'help' then
+		help()
+    elseif command[1] == 'list' then
+	  	list()
+    end
+end)
+
+function report(msg)
+	windower.add_to_chat(color,'NMWatch: '..msg)
+end
+
+windower.add_to_chat(color,'NMWatch Loaded!')
+
+function help()
+	report('Use //nmw <commands> to interface')
+	report('Commands: add ph, add nm, list, clear, reload, help')
+	report('add ph <match> <last two of hex ID>')
+	report('add nm <nm name>')
+end
+
+help()
+
+function add_ph(match, hex)
+	ph[#ph+1] = {wc=match,id=hex,found=0}
+	report(match..' has been added to PH #'..#ph+1)
+end
+
+function add_nm(match)
+	nm[#nm+1] = {name=match,found=0}
+	report(match..' has been add to NM #'..#nm+1)
+end
+
+
+
+function list()
+	for k,v in ipairs(ph) do
+		report('NMWatch: PH #'..k..': '..v.wc..' (id: '..v.id..')')
+	end
+
+	for k,v in ipairs(nm) do
+		report('MNWatch: NM #'..k..': '..v.name)
+	end
+end
 
 function num2hex(num)
     local hexstr = '0123456789abcdef'
@@ -72,12 +144,12 @@ function find_mobs()
 end
 
 function found_ph(name, id, found)
-	windower.add_to_chat(0,name..' (id: '..id..') found!')
+	report(name..' (id: '..id..') found!')
 	windower.play_sound(windower.addon_path..'sounds/RAWR.wav')
 end
 
 function found_nm(name, found)
-	windower.add_to_chat(0,name..' found!')
+	report(name..' found!')
 	windower.play_sound(windower.addon_path..'sounds/RAWR.wav')
 end
 
